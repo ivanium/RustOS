@@ -10,6 +10,7 @@
 #![feature(iterator_step_by)]
 #![feature(unboxed_closures)]
 #![feature(naked_functions)]
+#![feature(match_default_bindings)]
 #![feature(asm)]
 #![no_std]
 
@@ -49,6 +50,8 @@ mod consts;
 mod process;
 mod syscall;
 mod fs;
+
+mod kmodule;
 
 #[allow(dead_code)]
 #[cfg(target_arch = "x86_64")]
