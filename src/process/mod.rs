@@ -29,7 +29,12 @@ pub static MC: Once<Mutex<MemoryController>> = Once::new();
 extern fn idle_thread() -> ! {
     loop {
         println!("idle ...");
+
+        use process::PROCESSOR;
+        let mut processor = PROCESSOR.try().unwrap().lock();
+        processor.set_reschedule();
         let mut i = 0;
+
         while i < 1 << 22 {
             i += 1;
         }
