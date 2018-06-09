@@ -12,6 +12,7 @@
 #![feature(naked_functions)]
 #![feature(match_default_bindings)]
 #![feature(asm)]
+#![feature(underscore_lifetimes)]
 #![no_std]
 
 

@@ -35,7 +35,7 @@ pub fn load_sfs() {
             HeaderPt2::Header32(_) => true,
             HeaderPt2::Header64(_) => false,
         };
-        println!("elf hdr: {:?}", elf.header);
+        println!("elf hdr:\n{:?}", elf.header);
         for sh in elf.section_iter() {
             println!("sh: {:?}", sh);
         }
