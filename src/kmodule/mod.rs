@@ -7,6 +7,19 @@ use xmas_elf::symbol_table::Binding;
 use xmas_elf::sections;
 
 mod consts;
+pub mod manager;
+
+#[derive(Clone)]
+pub struct elf_mod_info_s {
+    image : u64,
+    image_size : u32,
+     
+    ptr : u64,
+    common_ptr : u64,
+    common_size : u32,
+    load_ptr : u64,
+    unload_ptr : u64,
+}
 
 pub fn do_init_module(name: *const u8, len: usize) -> i32 {
     let sfs = SimpleFileSystem::open(Box::new(&ide::DISK0)).unwrap();
