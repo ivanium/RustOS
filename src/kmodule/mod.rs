@@ -13,11 +13,11 @@ pub mod manager;
 #[derive(Clone)]
 pub struct elf_mod_info_s {
     image : u64,
-    image_size : u32,
+    image_size : usize,
 
     ptr : u64,
     common_ptr : u64,
-    common_size : u32,
+    common_size : usize,
     load_ptr : u64,
     unload_ptr : u64,
 }
@@ -56,13 +56,18 @@ pub fn do_init_module(name: *const u8, len: usize) -> i32 {
             return -1;
         }
         let export_symbol = false;
+        let mut info: elf_mod_info_s = elf_mod_info_s{ image: 0, image_size: 0, ptr:0, common_ptr: 0, common_size: 0, load_ptr: 0, unload_ptr: 0 };
         unsafe {
-            if elf_module_parse(&mut elf, &mut BUF, export_symbol) != 0 {
+            if elf_module_parse(&mut elf, &mut BUF, "", export_symbol, &mut info) != 0 {
                 return -1;
             }
         }
 
         // call enter function
+        let enter_func = info.load_ptr as *const fn();
+        unsafe {
+            (*enter_func)();
+        }
     } 
     0
 }
