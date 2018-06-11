@@ -1,4 +1,4 @@
-use xmas_elf::{ElfFile, header::{HeaderPt1, HeaderPt2}, sections, symbol_table::Binding, sections::ShType};
+use xmas_elf::{ElfFile, header::{HeaderPt1, HeaderPt2, sanity_check}, sections, symbol_table::Binding, sections::ShType};
 use super::consts;
 use super::elf_mod_info_s;
 use super::utils::*;
@@ -46,7 +46,12 @@ pub fn elf_hdr_check<'a>(elf: &'a ElfFile<'a>) -> i32 {
         return -1;
     }
 
-    println!("elf header check passed!");
+    match sanity_check(elf) {
+        Ok(_)   => println!("elf header check passed!"),
+        Err(_)  => {
+            return -1;
+        }
+    }
     0
 }
 
@@ -95,14 +100,18 @@ pub fn elf_module_parse<'a>(elf: &'a ElfFile<'a>, BUF: &mut [u8], name: &str, ex
                                         info.unload_ptr = BUF.as_ptr() as u64 + get_section_offset(elf, sym.shndx() as u32) + sym.value();
                                     }
                                     if export_symbol {
-                                        // mod touch symbol
-                                        mod_touch_symbol(sym_name, BUF.as_ptr() as u64 + get_section_offset(elf, sym.shndx() as u32) + sym.value(), 0);
+                                        unsafe {
+                                            // mod touch symbol
+                                            mod_touch_symbol(sym_name, BUF.as_ptr() as u64 + get_section_offset(elf, sym.shndx() as u32) + sym.value(), 0);
+                                        }
                                     }
                                 },
                                 Ok(Binding::Weak)   => {
                                     if export_symbol {
-                                        // mod create symbol
-                                        elf_mod_create_symbol(sym_name, (BUF.as_ptr() as u64 + sym.value()) as *mut u8, 0);
+                                        unsafe {
+                                            // mod create symbol
+                                            elf_mod_create_symbol(sym_name, (BUF.as_ptr() as u64 + sym.value()) as *mut u8, 0);
+                                        }
                                     }
                                 },
                                 Ok(_)               => {

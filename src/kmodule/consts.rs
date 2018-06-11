@@ -47,3 +47,7 @@ pub const R_X86_64_16        :u32 = 12;      /* Direct 16 bit zero extended */
 pub const R_X86_64_PC16      :u32 = 13;      /* 16 bit sign extended pc relative */
 pub const R_X86_64_8         :u32 = 14;      /* Direct 8 bit sign extended  */
 pub const R_X86_64_PC8       :u32 = 15;      /* 8 bit sign extended pc relative */
+
+pub const EXPORT_SYM_NAME_LEN:usize = 50;
+pub const EXPORT_SYM_HASH    :usize = 197;     /* hash code */
+pub const EXPORT_SYM_COUNT_MAX :usize = 1024;     /* hash num max */
