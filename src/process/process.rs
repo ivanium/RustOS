@@ -194,6 +194,9 @@ impl<'a> From<&'a ElfFile<'a>> for MemorySet {
                 ProgramHeader::Ph32(ph) => (ph.virtual_addr as usize, ph.mem_size as usize, ph.flags),
                 ProgramHeader::Ph64(ph) => (ph.virtual_addr as usize, ph.mem_size as usize, ph.flags),
             };
+            if virt_addr == 0 && mem_size == 0 {
+                continue;
+            }
             set.push(MemoryArea::new(virt_addr, virt_addr + mem_size, EntryFlags::from(flags), ""));
         }
         set
