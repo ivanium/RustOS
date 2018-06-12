@@ -2,6 +2,7 @@ use xmas_elf::{ElfFile, sections::{SectionHeader, ShType}, symbol_table::Entry64
 use super::consts::{EXPORT_SYM_HASH, EXPORT_SYM_COUNT_MAX, EXPORT_SYM_NAME_LEN};
 use spin::Mutex;
 use core::{slice, str};
+use zero::read_str;
 
 pub static mut ex_sym_f: Mutex<[i32; EXPORT_SYM_HASH]> = Mutex::new([-1; EXPORT_SYM_HASH]);
 pub static mut ex_sym_name: Mutex<[[u8; EXPORT_SYM_NAME_LEN]; EXPORT_SYM_COUNT_MAX]>
@@ -40,6 +41,29 @@ pub fn bsr(n: u64) -> i32 {
 	return res as i32;
 }
 
+pub unsafe fn get_sym_ptr(idx: i32) -> u64 {
+    if idx < 0 || idx >= *ex_sym_count.lock() {
+        return 0xffffffffffffffff; // ... ugly ...
+    }
+    return ex_sym_ptr.lock()[idx as usize];
+}
+
+pub fn get_symbol_string<'a>(elf: &'a ElfFile<'a>, BUF: &[u8], index: u32) -> &'a str {
+    for sh in elf.section_iter() {
+        if sh.get_type().unwrap() == ShType::SymTab {
+            let strsh = elf.section_header(sh.link() as u16).ok().expect("invalid sh link");
+            if strsh.get_type().unwrap() == ShType::StrTab {
+                if index == 0 {
+                    return " ";
+                } else {
+                    return read_str(&strsh.raw_data(elf)[index as usize..]);
+                }
+            }
+        }
+    }
+
+    " "
+}
 
 pub fn get_section_offset<'a>(elf: &'a ElfFile<'a>, info: u32) -> u64 {
     let sh = elf.section_header(info as u16).ok().expect("get sh offset failed!");
@@ -143,11 +167,25 @@ pub unsafe fn touch_export_sym(name: &str, ptr: u64, flags: u32) {
         ex_sym_n.lock()[cur as usize] = ex_sym_f.lock()[h];
         ex_sym_f.lock()[h] = cur;
 
-        ex_sym_name.lock()[cur as usize].clone_from_slice(&name.as_bytes()[0..50]);
+        ex_sym_name.lock()[cur as usize][..name_len].copy_from_slice(&name.as_bytes());
     }
 
     ex_sym_ptr.lock()[cur as usize] = ptr;
     ex_sym_flags.lock()[cur as usize] = flags;
+}
+
+pub unsafe fn c_strlen(inp: *const u8) -> usize{
+    let mut len = 0;
+    while *((inp as usize + len) as *const u8) != 0 {
+        len += 1;
+    }
+    return len;
+}
+
+pub unsafe fn c_memset(addr: *mut u8, c: u8, len: usize) {
+    for i in 0..len {
+        *((addr as usize + i) as *mut u8) = c;
+    }
 }
 
 pub fn sym_hash(name: &str, len: usize) -> usize {

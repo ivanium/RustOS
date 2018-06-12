@@ -39,6 +39,7 @@ extern crate arrayvec;
 #[macro_use]
 extern crate log;
 extern crate simple_filesystem;
+extern crate zero;
 
 #[macro_use]    // print!
 mod io;
@@ -87,6 +88,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
 
     arch::smp::start_other_cores(&acpi, &mut memory_controller);
     process::init(memory_controller);
+    kmodule::mod_init();
 
     fs::load_sfs();
 

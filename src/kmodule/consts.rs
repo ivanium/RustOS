@@ -25,9 +25,6 @@ pub const ELF_PF_X      :u8 = 1;
 pub const ELF_PF_W      :u8 = 2;
 pub const ELF_PF_R      :u8 = 4;
 
-pub const MOD_INIT_MODULE   : &'static str = "init_module";
-pub const MOD_CLEANUP_MODULE: &'static str = "cleanup_module";
-
 pub const PGSIZE        :u64 = 4096;
 
 /* x86-64 relocation types */
@@ -51,3 +48,9 @@ pub const R_X86_64_PC8       :u32 = 15;      /* 8 bit sign extended pc relative 
 pub const EXPORT_SYM_NAME_LEN:usize = 50;
 pub const EXPORT_SYM_HASH    :usize = 197;     /* hash code */
 pub const EXPORT_SYM_COUNT_MAX :usize = 1024;     /* hash num max */
+
+pub const MOD_INIT_MODULE : &'static str = "init_module";
+pub const MOD_CLEANUP_MODULE  : &'static str = "cleanup_module";
+
+pub const MOD_ADD : &'static str = "module_func_add";
+pub const MOD_MUL : &'static str = "module_func_mul";

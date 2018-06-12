@@ -3,6 +3,10 @@ use super::consts;
 use super::elf_mod_info_s;
 use super::utils::*;
 
+pub fn mod_loader_init() {
+    // nothing to do here since all of the global variable are initialized when define
+}
+
 pub fn elf_hdr_check<'a>(elf: &'a ElfFile<'a>) -> i32 {
     debug!("begin elf header check!");
     if elf.header.pt1.magic != [0x7F, 0x45, 0x4c, 0x46] {
@@ -69,14 +73,16 @@ pub fn elf_module_parse<'a>(elf: &'a ElfFile<'a>, BUF: &mut [u8], name: &str, ex
         println!("sh name: {:?}, type: {:?}", sh.get_name(&elf), sh.get_type());
         sections::sanity_check(sh, &elf).unwrap();
         match sh.get_type() {
-            SymTab => {
+            Ok(SymTab) => {
                 if let sections::SectionData::SymbolTable64(symtab) = sh.get_data(elf).ok().expect("not symtab 64") {
                     println!("symtab: {:?}", symtab);
                     use xmas_elf::symbol_table::Entry;
+
+                    let mut sym_idx = 0;
                     for sym in symtab {
                         if sym.shndx() != SHN_UNDEF && sym.shndx() < 0xff00 {
-                            let sym_name = elf.get_string(sym.name()).ok().expect("get sym name error"); // uncertain
-//                            let sh_name = sh.get_name(elf).ok().expect("get sh name error!");
+//                            let sym_name = elf.get_string(sym.name()).ok().expect("get sym name error"); // TODO: uncertain
+                            let sym_name = get_symbol_string(elf, BUF, sym.name());
                             match sym.get_binding() {
                                 Ok(Binding::Local)  => {
                                     if sym_name == MOD_INIT_MODULE {
@@ -90,7 +96,7 @@ pub fn elf_module_parse<'a>(elf: &'a ElfFile<'a>, BUF: &mut [u8], name: &str, ex
 
                                 },
                                 Ok(Binding::Global) => {
-                                    println!("global symbal");
+                                    println!("global symbol");
                                     if sym_name == MOD_INIT_MODULE {
                                         // get section offset
                                         info.load_ptr = BUF.as_ptr() as u64 + get_section_offset(elf, sym.shndx() as u32) + sym.value();
@@ -123,15 +129,22 @@ pub fn elf_module_parse<'a>(elf: &'a ElfFile<'a>, BUF: &mut [u8], name: &str, ex
                             };
                         } else if sym.shndx() == SHN_COMMON {
                             println!("SHN_COMMON, alloc {} byte offset {}\n", sym.size(), cur_common_alloc);
-                            // sym.set_value(cur_common_alloc); //TODO: fix modify memory containt
+                            unsafe {
+                                // sym.set_value(cur_common_alloc); //TODO: fix modify memory containt
+                                use xmas_elf::symbol_table::{Entry, Entry64};
+                                let sym_ptr = (BUF.as_ptr() as u64 + sh.offset() + sym_idx) as *mut Entry64;
+                                (*sym_ptr).set_value(cur_common_alloc);
+                            }
+
                             cur_common_alloc += sym.size();
                         } else {
                             println!("shndx[{}]\n", sym.shndx());
                         }
+                        sym_idx += 1;
                     }
                 }
             },
-            NoBits => {
+            Ok(NoBits) => {
                 println!("bss section, alloc {} byte  align {:x}", sh.size(), sh.align());
 
                 if bsf(sh.align()) != bsr(sh.align()) {
@@ -146,6 +159,7 @@ pub fn elf_module_parse<'a>(elf: &'a ElfFile<'a>, BUF: &mut [u8], name: &str, ex
                 // sh.address() = cur_common_alloc; // TODO: fix modify address in hdr
                 cur_common_alloc += sh.size();
             },
+            _       => {},
         }
     }
 
@@ -158,19 +172,28 @@ pub fn elf_module_parse<'a>(elf: &'a ElfFile<'a>, BUF: &mut [u8], name: &str, ex
         // common_space = xxx
         // if
         // println!("no enough memory for bss\n");
-        // set common data
-        // set common size
+        use super::bss_pool_ptr;
+        common_space = *bss_pool_ptr.lock();
+        if common_space == 0 {
+            println!("no enough memory for bss");
+            return -1;
+        }
+        *bss_pool_ptr.lock() += cur_common_alloc;
+
+        println!("memory pointer: {:16x}", common_space);
+        unsafe {
+            c_memset(common_space as *mut u8, 0, cur_common_alloc as usize);
+        }
+
         info.common_ptr = common_space;
         info.common_size = cur_common_alloc as usize;
         // return -1;
     } else {
-        // set common data
-        // set common size
         info.common_ptr = 0;
         info.common_size = 0;
     }
 
-    // fill the relocation entry
+    // fill the relocation entries
     for sh in elf.section_iter() {
         match sh.get_type() {
             Ok(ShType::Rela) => {
@@ -198,8 +221,8 @@ pub fn elf_module_parse<'a>(elf: &'a ElfFile<'a>, BUF: &mut [u8], name: &str, ex
                                         reloc_addr = 0;
                                     }
                                 }  else {
-                                    // println!("external symbol %s addr = %p\n", sym_name, ex_sym_ptr[idx]);
-                                    // reloc_addr = ex_sym_ptr[idx];
+                                    println!("external symbol {} addr = {:x}\n", sym_name, ex_sym_ptr.lock()[idx as usize]);
+                                    reloc_addr = ex_sym_ptr.lock()[idx as usize];
                                 }
                             } else if (*symtab).shndx() < 0xff00 {
                                 println!("section offset {:16x}, addr {:16x}", get_section_offset(elf, (*symtab).shndx() as u32), (*symtab).value());
@@ -255,5 +278,23 @@ pub fn elf_module_parse<'a>(elf: &'a ElfFile<'a>, BUF: &mut [u8], name: &str, ex
     // for ph in elf.program_iter() {
     //     println!("ph: {:?}", ph);
     // }
+    0
+}
+
+pub fn unload_module(name: &str) -> i32 {
+    use super::manager::*;
+    use alloc::string::String;
+
+    let info = get_module(&String::from(name));
+    match info {
+        Some(mod_info) => {
+            unsafe { (*(mod_info.unload_ptr as *const fn()))(); }
+            return del_module(&String::from(name))
+        }
+        None           => {
+            println!("module info not found for {}", name);
+            -1;
+        }
+    }
     0
 }

@@ -50,9 +50,9 @@ pub fn syscall(tf: &TrapFrame, is32: bool) -> i32 {
         Syscall::Ucore(UCORE_SYS_LAB6_SET_PRIORITY) =>
             sys_lab6_set_priority(args[0]),
         Syscall::Xv6(SYS_INIT_MODULE) =>
-            sys_init_module(args[0] as *const u8, args[1] as usize),
+            sys_init_module(args[0] as *const u8),
         Syscall::Xv6(SYS_CLEANUP_MODULE) =>
-            sys_cleanup_module(args[0] as *const char),
+            sys_cleanup_module(args[0] as *const u8),
         Syscall::Xv6(SYS_LIST_MODULE) =>
             sys_list_module(),
         Syscall::Ucore(UCORE_SYS_PUTC) =>
@@ -178,11 +178,11 @@ fn sys_lab6_set_priority(priority: usize) -> i32 {
     0
 }
 
-fn sys_init_module(name: *const u8, len: usize) -> i32{
-    do_init_module(name, len)
+fn sys_init_module(name: *const u8) -> i32{
+    do_init_module(name)
 }
 
-fn sys_cleanup_module(name: *const char) -> i32{
+fn sys_cleanup_module(name: *const u8) -> i32{
     do_cleanup_module(name)
 }
 
