@@ -23,8 +23,8 @@ pub fn syscall(tf: &TrapFrame, is32: bool) -> i32 {
     };
 
     match id {
-        // Syscall::Xv6(SYS_READ) | Syscall::Ucore(UCORE_SYS_READ) =>
-        //     sys_read(args[0], args[1] as *const u8, args[2]),
+        Syscall::Xv6(SYS_READ) | Syscall::Ucore(UCORE_SYS_READ) =>
+            sys_read(args[0], args[1] as *mut u8, args[2]),
         Syscall::Xv6(SYS_WRITE) | Syscall::Ucore(UCORE_SYS_WRITE) =>
             sys_write(args[0], args[1] as *const u8, args[2]),
         Syscall::Xv6(SYS_OPEN) | Syscall::Ucore(UCORE_SYS_OPEN) =>
@@ -49,11 +49,11 @@ pub fn syscall(tf: &TrapFrame, is32: bool) -> i32 {
             sys_get_time(),
         Syscall::Ucore(UCORE_SYS_LAB6_SET_PRIORITY) =>
             sys_lab6_set_priority(args[0]),
-        Syscall::Xv6(SYS_INIT_MODULE) =>
+        Syscall::Ucore(SYS_INIT_MODULE) =>
             sys_init_module(args[0] as *const u8),
-        Syscall::Xv6(SYS_CLEANUP_MODULE) =>
+        Syscall::Ucore(SYS_CLEANUP_MODULE) =>
             sys_cleanup_module(args[0] as *const u8),
-        Syscall::Xv6(SYS_LIST_MODULE) =>
+        Syscall::Ucore(SYS_LIST_MODULE) =>
             sys_list_module(),
         Syscall::Ucore(UCORE_SYS_PUTC) =>
             {
@@ -67,25 +67,28 @@ pub fn syscall(tf: &TrapFrame, is32: bool) -> i32 {
     }
 }
 
-// fn sys_read(fd: usize, base: *mut u8, len: usize) -> i32 {
-//     info!("read: fd: {}, base: {:?}, len: {:#x}", fd, base, len);
-//     use core::slice;
-//     use core::str;
-//     let slice = unsafe { slice::from_raw_parts_mut(base, len) };
-    
-//     let mut data = String::new();
+fn sys_read(fd: usize, base: *mut u8, len: usize) -> i32 {
+    info!("read: fd: {}, base: {:?}, len: {:#x}", fd, base, len);
+    use core::slice;
+    use core::str;
+    use alloc::string::String;
 
-//     use std::io;
-//     io::stdin().read_line(&mut data)
-//         .ok()
-//         .expect("Failed to read line");
-//     slice.copy_from_slice(unsafe { &(data.as_bytes()[..len]) });
-//     print!("{}", str::from_utf8(slice).unwrap());
-//     0
-// }
+    let slice = unsafe { slice::from_raw_parts_mut(base, len) };
+    
+    // let mut data = String::new();
+    let mut data = String::from("matrix");
+
+    // use core::io;
+    // io::stdin().read_line(&mut data)
+    //     .ok()
+    //     .expect("Failed to read line");
+    slice.copy_from_slice(unsafe { &(data.as_bytes()[..len]) });
+    print!("{}", str::from_utf8(slice).unwrap());
+    0
+}
 
 fn sys_write(fd: usize, base: *const u8, len: usize) -> i32 {
-    info!("write: fd: {}, base: {:?}, len: {:#x}", fd, base, len);
+    // info!("write: fd: {}, base: {:?}, len: {:#x}", fd, base, len);
     use core::slice;
     use core::str;
     let slice = unsafe { slice::from_raw_parts(base, len) };
@@ -247,6 +250,6 @@ const UCORE_SYS_GETDIRENTRY: usize = 128;
 const UCORE_SYS_DUP: usize = 130;
 const UCORE_SYS_LAB6_SET_PRIORITY: usize = 255;
 
-const SYS_INIT_MODULE: usize = 150;
-const SYS_CLEANUP_MODULE: usize = 151;
-const SYS_LIST_MODULE: usize = 152;
+const SYS_INIT_MODULE: usize = 200;
+const SYS_CLEANUP_MODULE: usize = 201;
+const SYS_LIST_MODULE: usize = 202;
