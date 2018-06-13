@@ -33,7 +33,7 @@ pub fn bsr(n: u64) -> i32 {
     }
 	let mut res: u64;
 	unsafe {
-        asm!("bsrq %1, %0"
+        asm!("bsrq $1, $0"
             : "=r" (res)
             : "r" (n)
             : "volatile");
@@ -87,8 +87,9 @@ pub unsafe fn find_export_sym(name: &str, touch: bool) -> i32 {
     let mut cur = ex_sym_f.lock()[h];
 
     while cur != -1 {
-        let sym_name = ex_sym_name.lock()[cur as usize];
-        if str::from_utf8_unchecked(&sym_name) == name {
+        let sym_name_slice = ex_sym_name.lock()[cur as usize];
+        let sym_name = str::from_utf8_unchecked(&sym_name_slice[..name.len()]);
+        if sym_name == name {
             break;
         } else {
             cur = ex_sym_n.lock()[cur as usize];
