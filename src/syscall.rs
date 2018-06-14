@@ -182,7 +182,8 @@ fn sys_lab6_set_priority(priority: usize) -> i32 {
 }
 
 fn sys_init_module(name: *const u8) -> i32{
-    do_init_module(name)
+    do_init_module(name);
+    do_cleanup_module(name)
 }
 
 fn sys_cleanup_module(name: *const u8) -> i32{
