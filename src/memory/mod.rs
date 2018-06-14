@@ -148,9 +148,10 @@ impl From<ElfSectionFlags> for EntryFlags {
         if elf_flags.contains(ElfSectionFlags::WRITABLE) {
             flags = flags | EntryFlags::WRITABLE;
         }
-        if !elf_flags.contains(ElfSectionFlags::EXECUTABLE) {
-            flags = flags | EntryFlags::NO_EXECUTE;
-        }
+        // if !elf_flags.contains(ElfSectionFlags::EXECUTABLE) {
+        //     flags = flags | EntryFlags::NO_EXECUTE;
+        // }
+        flags = flags & !EntryFlags::NO_EXECUTE;
         flags
     }
 }
