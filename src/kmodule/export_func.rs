@@ -3,7 +3,7 @@ use super::consts::*;
 
 macro_rules! export {
     ($name: expr, $func: ident) => {
-        unsafe { touch_export_sym(&$name, &$func as *const _ as u64, 0); }
+        unsafe { touch_export_sym(&$name, $func as *const u8 as u64, 0); }
     };
 }
 
@@ -31,7 +31,7 @@ pub unsafe extern "C" fn unregister_mod_mul() {
 pub unsafe extern "C" fn kprintf(fmt: *const u8) -> i32 { // support only string now
     use core::{str, slice};
     use alloc::string::String;
-
+    
     let mut len = 0;
     while *((fmt as usize + len) as *const u8) != 0 {
         len += 1;

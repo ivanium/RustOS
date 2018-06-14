@@ -15,36 +15,37 @@ pub fn load_sfs() {
     debug!("Loading programs: {:?}", files);
 
 //    for name in files.iter().filter(|&f| f != "." && f != "..") {
-    for name in files.iter().filter(|&f| f == "hello") {
+    for name in files.iter().filter(|&f| f == "insmod") {
         static mut BUF: [u8; 64 << 12] = [0; 64 << 12];
         let file = root.borrow().lookup(name.as_str()).unwrap();
         let len = file.borrow().read_at(0, unsafe { &mut BUF }).unwrap();
         process::add_user_process(name, unsafe { &BUF[..len] });
     }
 
-    process::print();
+    // process::print();
 
     use xmas_elf::{ElfFile, header::HeaderPt2, program::{Flags, ProgramHeader}};
 
-    for name in files.iter().filter(|&f| f == "hello") {
+    for name in files.iter().filter(|&f| f == "rmmod") {
         static mut BUF: [u8; 64 << 12] = [0; 64 << 12];
         let file = root.borrow().lookup(name.as_str()).unwrap();
         let len = file.borrow().read_at(0, unsafe { &mut BUF }).unwrap();
-        let elf = ElfFile::new(unsafe{ &BUF[..len] }).expect("failed to read elf");
-        let is32 = match elf.header.pt2 {
-            HeaderPt2::Header32(_) => true,
-            HeaderPt2::Header64(_) => false,
-        };
-        println!("elf hdr:\n{:?}", elf.header);
-        for sh in elf.section_iter() {
-            println!("sh: {:?}", sh);
-        }
-        for ph in elf.program_iter() {
-            println!("ph: {:?}", ph);
-        }
-        if elf.header.pt1.magic != [0x7F, 0x45, 0x4c, 0x46] {
-            println!("elf hdr magic {:?}", elf.header.pt1.magic);
-        }
+        process::add_user_process(name, unsafe { &BUF[..len] });
+        // let elf = ElfFile::new(unsafe{ &BUF[..len] }).expect("failed to read elf");
+        // let is32 = match elf.header.pt2 {
+        //     HeaderPt2::Header32(_) => true,
+        //     HeaderPt2::Header64(_) => false,
+        // };
+        // println!("elf hdr:\n{:?}", elf.header);
+        // for sh in elf.section_iter() {
+        //     println!("sh: {:?}", sh);
+        // }
+        // for ph in elf.program_iter() {
+        //     println!("ph: {:?}", ph);
+        // }
+        // if elf.header.pt1.magic != [0x7F, 0x45, 0x4c, 0x46] {
+        //     println!("elf hdr magic {:?}", elf.header.pt1.magic);
+        // }
 
         // let mut mc = MC.try().unwrap().lock();
         // let mut memory_set = MemorySet::from(&elf);
@@ -68,10 +69,11 @@ pub fn load_sfs() {
         // unsafe {
         //     (*(elf.header.pt2.entry_point() as *mut (fn() ->i32)))();
         // }
-        use process::PROCESSOR;
-        let mut processor = PROCESSOR.try().unwrap().lock();
-        processor.set_reschedule();
     }
+    process::print();
+    use process::PROCESSOR;
+    let mut processor = PROCESSOR.try().unwrap().lock();
+    processor.set_reschedule();
 }
 
 #[cfg(feature = "link_user_program")]

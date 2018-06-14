@@ -45,6 +45,7 @@ pub fn do_init_module(name: *const u8) -> i32 {
         let len = c_strlen(name);
         slice::from_raw_parts(name, len)
     };
+    println!("\nin init module, mod name: {}", str::from_utf8(slice).unwrap());
 
     for fname in files.iter().filter(|&f| f == str::from_utf8(slice).expect("not a valid KM name"))  { // read file
         static mut BUF: [u8; 64 << 12] = [0; 64 << 12];
@@ -82,8 +83,14 @@ pub fn do_init_module(name: *const u8) -> i32 {
             add_module(&String::from_utf8_unchecked(slice.to_vec()), &info); // add module last since all of modifications of info are done before
         }
 
+        // println!("info.load_ptr: {:x}", info.load_ptr);
+        // for i in 0x0..0x14 {
+        //     unsafe { print!("{:x} ", *((info.load_ptr + i) as *const u8)); }
+        // }
+        // println!("");
+
         // call enter function
-        let enter_func = info.load_ptr as *const fn();
+        let enter_func = &info.load_ptr as *const u64 as *const fn();
         unsafe {
             (*enter_func)();
         }
@@ -100,6 +107,8 @@ pub fn do_cleanup_module(name: *const u8) -> i32 {
         let len = c_strlen(name);
         slice::from_raw_parts(name, len)
     };
+    println!("in cleanup mod: {}", str::from_utf8(slice).unwrap());
+    print_modules();
 
     unsafe {
         if !module_loaded(&String::from_utf8_unchecked(slice.to_vec())) {
