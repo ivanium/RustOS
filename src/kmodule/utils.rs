@@ -102,7 +102,7 @@ pub unsafe fn find_export_sym(name: &str, touch: bool) -> i32 {
         ex_sym_n.lock()[cur as usize] = ex_sym_f.lock()[h];
         ex_sym_f.lock()[h] = cur;
 
-        ex_sym_name.lock()[cur as usize].clone_from_slice(&name.as_bytes()[0..50]);
+        ex_sym_name.lock()[cur as usize][..name_len].copy_from_slice(&name.as_bytes());
     }
 
     cur

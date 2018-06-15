@@ -8,27 +8,27 @@ macro_rules! export {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn register_mod_add(f: *const u8) {
+pub unsafe extern fn register_mod_add(f: u64) {
     mod_touch_symbol(MOD_ADD, f as u64, 0);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn unregister_mod_add() {
+pub unsafe extern fn unregister_mod_add() {
     mod_disable_symbol(MOD_ADD);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn register_mod_mul(f: *const u8) {
+pub unsafe extern fn register_mod_mul(f: *const u8) {
     mod_touch_symbol(MOD_MUL, f as u64, 0);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn unregister_mod_mul() {
+pub unsafe extern fn unregister_mod_mul() {
     mod_disable_symbol(MOD_MUL);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn kprintf(fmt: *const u8) -> i32 { // support only string now
+pub unsafe extern fn kprintf(fmt: *const u8) -> i32 { // support only string now
     use core::{str, slice};
     use alloc::string::String;
     

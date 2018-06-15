@@ -74,7 +74,7 @@ pub fn do_init_module(name: *const u8) -> i32 {
         if elf_hdr_check(&elf) != 0 {
             return -1;
         }
-        let export_symbol = false;
+        let export_symbol = true;
 
         unsafe {
             if elf_module_parse(&mut elf, &mut BUF, "", export_symbol, &mut info) != 0 {
@@ -83,7 +83,7 @@ pub fn do_init_module(name: *const u8) -> i32 {
             add_module(&String::from_utf8_unchecked(slice.to_vec()), &info); // add module last since all of modifications of info are done before
         }
 
-        // println!("info.load_ptr: {:x}", info.load_ptr);
+        println!("info.load_ptr: {:x}", info.load_ptr);
         // for i in 0x0..0x14 {
         //     unsafe { print!("{:x} ", *((info.load_ptr + i) as *const u8)); }
         // }
@@ -107,7 +107,7 @@ pub fn do_cleanup_module(name: *const u8) -> i32 {
         let len = c_strlen(name);
         slice::from_raw_parts(name, len)
     };
-    println!("in cleanup mod: {}", str::from_utf8(slice).unwrap());
+    println!("in cleanup mod: {}, before clean up", str::from_utf8(slice).unwrap());
     print_modules();
 
     unsafe {
@@ -116,11 +116,13 @@ pub fn do_cleanup_module(name: *const u8) -> i32 {
             return -1;
         }
     }
-    return unsafe { unload_module(&String::from_utf8_unchecked(slice.to_vec())) };
+    unsafe { unload_module(&String::from_utf8_unchecked(slice.to_vec())) };
+    println!("in cleanup mod: {}, after clean up", str::from_utf8(slice).unwrap());
+    print_modules(); 
+    0
 }
 
 pub fn print_modules() {
-    println!("in print_modules");
     print_loaded_module();
 }
 
@@ -142,4 +144,49 @@ pub fn mod_init() {
     export!("kprintf", kprintf);
 
     println!("[ II ] mod init finished\n");
+}
+
+pub unsafe fn do_mod_add(a: i32, b: i32) -> i32 {
+    let mut c: i32 = 0;
+    let idx = find_export_sym(MOD_ADD, false);
+    if idx < 0 || get_sym_ptr(idx) == (-1) as i64 as u64 {
+        println!("[ EE ] module add not loaded into kernel");
+        return 0;
+    }
+    // println!("add fun ptr: {:#x}", get_sym_ptr(idx));
+    // println!("c: {:#x}", &c as *const i32 as usize);
+    // let fun_ptr = &(get_sym_ptr(idx)) as *const u64 as *const fn(i32, i32, *mut i32);
+    let tmp: u64 = 0xffffff00001d04c8;
+    let fun_ptr = &tmp as *const u64 as *const fn(i32, i32, *mut i32);
+
+    // println!("fun_ptr= {:#x} ", (*fun_ptr) as usize);
+    // let sptr1=0xffffff00001d0547 as usize;
+    // println!("sptr1= {:#x} ", sptr1);
+    // println!("*sptr1= {:x} ", *(sptr1 as *const u8));
+    // let sptr2=0xffffff00001d0548 as usize;
+    // println!("sptr2= {:#x} ", sptr2);
+    // println!("*sptr2= {:x} ", *(sptr2 as *const u8));
+    // for i in 0..50 {
+    //     print!("{:x} ", *((sptr1 as usize + i) as *const u8))
+    // }
+
+    // println!("");
+    // println!("test print_modules:{:#x}",&(print_modules as *const ()) as *const _ as *const u8 as u64);
+    // println!("test mod_init:{:#x}",&(mod_init as *const ()) as *const _ as *const u8 as u64);
+    println!("before add: a = {}, b = {}, c = {}", a, b, c);
+    (*fun_ptr)(a, b, &mut c as *mut i32);
+    println!("after add: a = {}, b = {}, c = {}", a, b, c);
+    c
+}
+
+pub unsafe fn do_mod_mul(a: i32, b: i32) -> i32 {
+    let mut c: i32 = 0;
+    let idx = find_export_sym(MOD_MUL, false);
+    if idx < 0 || get_sym_ptr(idx) == (-1) as i64 as u64 {
+        println!("[ EE ] module add not loaded into kernel");
+        return 0;
+    }
+    let fun_ptr = &(get_sym_ptr(idx)) as *const u64 as *const fn(i32, i32, *mut i32);
+    (*fun_ptr)(a, b, &mut c as *mut i32);
+    c
 }

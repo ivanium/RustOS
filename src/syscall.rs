@@ -55,6 +55,10 @@ pub fn syscall(tf: &TrapFrame, is32: bool) -> i32 {
             sys_cleanup_module(args[0] as *const u8),
         Syscall::Ucore(SYS_LIST_MODULE) =>
             sys_list_module(),
+        Syscall::Ucore(SYS_MOD_ADD) =>
+            sys_mod_add(args[0] as i32, args[1] as i32, args[2] as *mut i32),
+        Syscall::Ucore(SYS_MOD_MUL) =>
+            sys_mod_mul(args[0] as i32, args[1] as i32, args[2] as *mut i32),
         Syscall::Ucore(UCORE_SYS_PUTC) =>
             {
                 print!("{}", args[0] as u8 as char);
@@ -183,7 +187,7 @@ fn sys_lab6_set_priority(priority: usize) -> i32 {
 
 fn sys_init_module(name: *const u8) -> i32{
     do_init_module(name);
-    do_cleanup_module(name)
+    0
 }
 
 fn sys_cleanup_module(name: *const u8) -> i32{
@@ -194,6 +198,20 @@ fn sys_list_module() -> i32{
     print_modules();
     0
 }
+
+fn sys_mod_add(a: i32, b: i32, c: *mut i32) -> i32 {
+    use kmodule::do_mod_add;
+    println!("add: a = {}, b = {}", a, b);
+    unsafe { *c = do_mod_add(a, b) };
+    0
+}
+
+fn sys_mod_mul(a: i32, b: i32, c: *mut i32) -> i32 {
+    use kmodule::do_mod_mul;
+    unsafe { *c = do_mod_mul(a, b) };
+    0
+}
+
 
 #[derive(Debug)]
 enum Syscall {
@@ -254,3 +272,5 @@ const UCORE_SYS_LAB6_SET_PRIORITY: usize = 255;
 const SYS_INIT_MODULE: usize = 200;
 const SYS_CLEANUP_MODULE: usize = 201;
 const SYS_LIST_MODULE: usize = 202;
+const SYS_MOD_ADD: usize = 210;
+const SYS_MOD_MUL: usize = 211;

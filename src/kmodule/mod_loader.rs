@@ -116,6 +116,13 @@ pub fn elf_module_parse<'a>(elf: &'a ElfFile<'a>, BUF: &mut [u8], name: &str, ex
                                     if export_symbol {
                                         unsafe {
                                             // mod touch symbol
+                                            println!("get sym: {}, offset: {}", sym_name, get_section_offset(elf, sym.shndx() as u32) + sym.value());
+                                            // let tmp = (get_section_offset(elf, sym.shndx() as u32) + sym.value());
+                                            // for i in tmp..tmp+0x40 {
+                                            //     print!("{:x} ", BUF[i as usize]);
+                                            // }
+                                            // println!("");
+                                            println!("{} addr {:#x}", sym_name, BUF.as_ptr() as u64 + get_section_offset(elf, sym.shndx() as u32) + sym.value());
                                             mod_touch_symbol(sym_name, BUF.as_ptr() as u64 + get_section_offset(elf, sym.shndx() as u32) + sym.value(), 0);
                                         }
                                     }
@@ -124,7 +131,7 @@ pub fn elf_module_parse<'a>(elf: &'a ElfFile<'a>, BUF: &mut [u8], name: &str, ex
                                     if export_symbol {
                                         unsafe {
                                             // mod create symbol
-                                            elf_mod_create_symbol(sym_name, (BUF.as_ptr() as u64 + sym.value()) as *mut u8, 0);
+                                            elf_mod_create_symbol(sym_name, (BUF.as_ptr() as u64 + get_section_offset(elf, sym.shndx() as u32) + sym.value()) as *mut u8, 0);
                                         }
                                     }
                                 },
